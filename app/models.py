@@ -28,10 +28,8 @@ class User(UserBase, table=True):
     __tablename__ = "users"
 
     id: int | None = Field(default=None, primary_key=True)
-    # TODO 1: agrega a la TABLA dos campos
-    #   hashed_password: str           → el hash, NUNCA la contraseña en claro
-    #   role: Role = Field(default=Role.USER)
-    # (Borra clase2.db y reinicia después de cambiar la tabla.)
+    hashed_password: str          # → el hash, NUNCA la contraseña en claro
+    role: Role = Field(default=Role.USER)
     posts: list["Post"] = Relationship(back_populates="author")
 
 
