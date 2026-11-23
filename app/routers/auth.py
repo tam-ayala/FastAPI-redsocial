@@ -14,13 +14,14 @@ router = APIRouter(prefix="/auth", tags=["auth"])
 
 @router.post("/register", response_model=UserMe, status_code=201)
 def register(data: UserCreate, db: SessionDep):
-    # TODO 2: registrar un usuario
-    #   a) si ya existe un User con ese username → 409 (status.HTTP_409_CONFLICT)
-    #      pista: db.exec(select(User).where(User.username == data.username)).first()
-    #   b) crear User(username=data.username, hashed_password=hash_password(data.password))
-    #      → la contraseña en claro NUNCA se guarda
-    #   c) db.add → db.commit → db.refresh → return user
-    raise HTTPException(status.HTTP_501_NOT_IMPLEMENTED, "TODO 2: registro")
+    existente = db.exec(select(User).where(User.username == data.username)).first()
+    if existente: #   a) si ya existe un User con ese username → 409 (status.HTTP_409_CONFLICT)
+        raise HTTPException(status.HTTP_409_CONFLICT, "Usuario ya existente")
+    user = User(username=data.username, hashed_password=hash_password(data.password)) #→ la contraseña en claro NUNCA se guarda
+    db.add(user)
+    db.commit()
+    db.refresh(user)
+    return user    
 
 
 @router.post("/login", response_model=Token)
