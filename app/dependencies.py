@@ -22,14 +22,14 @@ def credentials_error() -> HTTPException:
     )
 
 
-def get_current_user(token: Annotated[str, Depends(oauth2_scheme)], db: SessionDep) -> User:
-    # TODO 4: (inyección de dependencias: FastAPI te entrega `token` y `db` ya resueltos)
-    #   1) user_id = read_access_token(token)
-    #   2) si user_id es None → raise credentials_error()
-    #   3) user = db.get(User, user_id)
-    #   4) si user es None → raise credentials_error()
-    #   5) return user
-    raise credentials_error()  # ← borra esta línea cuando termines
+def get_current_user(token: Annotated[str, Depends(oauth2_scheme)], db: SessionDep) -> User: # FastAPI te entrega `token` y `db` ya resueltos
+    user_id = read_access_token(token)
+    if user_id is None:
+        raise credentials_error()
+    user = db.get(User, user_id)
+    if user is None:
+        raise credentials_error()
+    return user
 
 
 CurrentUser = Annotated[User, Depends(get_current_user)]
