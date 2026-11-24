@@ -1,10 +1,11 @@
 from typing import Annotated
 
 from fastapi import APIRouter, HTTPException, Query, status
-from sqlmodel import col, select, func, Session
+from sqlmodel import col, select, func
+from sqlmodel import Session, col, select
 
 from dependencies import CurrentUser, SessionDep, get_post_or_404, is_admin, require
-from models import Post, PostCreate, PostPublic, PostUpdate, PostWithLikes, UserPublic, Like, User
+from models import Post, PostCreate, PostPublic, PostUpdate, PostWithLikes, UserPublic, Like, User, UserPublic
 
 router = APIRouter(prefix="/posts", tags=["posts"])
 
@@ -12,7 +13,10 @@ router = APIRouter(prefix="/posts", tags=["posts"])
 def posts_with_likes():
     """SELECT posts.*, COUNT(likes.user_id)
         FROM posts LEFT JOIN likes ON likes.post_id = posts.id
-        GROUP BY posts.id"""
+        GROUP BY posts.id
+    LEFT JOIN (isouter=True): los posts SIN likes también aparecen, con 0.
+    Con un JOIN común desaparecerían del resultado."""
+    
     return (
           select(Post, func.count(col(Like.user_id)))
           .join(Like, col(Like.post_id) == col(Post.id), isouter=True)
@@ -20,7 +24,7 @@ def posts_with_likes():
     )
 
 def to_post_with_likes(row) -> PostWithLikes:
-    post, likes_count = row        # cada fila es una tupla (Post, int)
+    post, likes_count = row        # cada fila del select es una tupla (Post, int)
     return PostWithLikes.model_validate(post, update={"likes_count": likes_count})
 
 def get_post_with_likes_or_404(db: Session, post_id: int) -> PostWithLikes:
@@ -42,17 +46,7 @@ def read_posts(db: SessionDep, offset: int = 0, limit: Annotated[int, Query(le=1
 def read_post(post_id: int, db: SessionDep):
     return get_post_with_likes_or_404(db, post_id)
 
-
-
-@router.get("", response_model=list[PostPublic])
-def read_posts(db: SessionDep, offset: int = 0, limit: Annotated[int, Query(le=100)] = 20):
-    stmt = select(Post).order_by(col(Post.created_at).desc()).offset(offset).limit(limit)
-    return db.exec(stmt).all()
-
-
-@router.get("/{post_id}", response_model=PostPublic)
-def read_post(post_id: int, db: SessionDep):
-    return get_post_or_404(db, post_id)
+# ═══════════════ CRUD de la clase 2 (sin cambios) ═══════════════
 
 
 @router.post("", response_model=PostPublic, status_code=201)
@@ -67,35 +61,27 @@ def create_post(data: PostCreate, db: SessionDep, current_user: CurrentUser):
 @router.patch("/{post_id}", response_model=PostPublic)
 def update_post(post_id: int, data: PostUpdate, db: SessionDep, current_user: CurrentUser):
     post = get_post_or_404(db, post_id)
-    require(post.author_id == current_user.id or is_admin(current_user)) #solo el autor puede editar (o un admin)
+    require(post.author_id == current_user.id or is_admin(current_user))
     post.sqlmodel_update(data.model_dump(exclude_unset=True))
     db.add(post)
     db.commit()
     db.refresh(post)
-    return post    
+    return post
 
 
 @router.delete("/{post_id}", status_code=204)
 def delete_post(post_id: int, db: SessionDep, current_user: CurrentUser): # mismas reglas que editar.
     post = get_post_or_404(db, post_id)
     require(post.author_id == current_user.id or is_admin(current_user))
-    db.delete(post) # que pasa con los likes de ese post? → ondelete="CASCADE" en la tabla Like
+    db.delete(post) # que pasa con los likes de ese post? → ondelete="CASCADE" en la tabla Like SE BORRAN SOLOS
     db.commit()
     
 # ═══════════════ Likes ═══════════════
 @router.put("/{post_id}/like", response_model=PostWithLikes)
 def like_post(post_id: int, db: SessionDep, current_user: CurrentUser):
-    # TODO 3: dar like. PUT = "déjalo en este estado": hacerlo dos veces NO es un error (idempotente).
-    #   a) get_post_or_404(db, post_id)
-    #   b) like = db.get(Like, (current_user.id, post_id))
-    #      → get con clave COMPUESTA: la tupla va en el orden de las primary_key del modelo
-    #   c) si like es None: db.add(Like(user_id=current_user.id, post_id=post_id)) y db.commit()
-    #      (si ya existía, no hagas nada)
-    #   d) return get_post_with_likes_or_404(db, post_id)     → el cliente ve el conteo nuevo
-    #raise HTTPException(status.HTTP_501_NOT_IMPLEMENTED, "TODO 3: dar like")
     get_post_or_404(db, post_id)
-    like = db.get(Like, (current_user.id, post_id))
-    if like is None:
+    # db.get con clave COMPUESTA: la tupla va en el orden en que declaraste las primary_key
+    if db.get(Like, (current_user.id, post_id)) is None:
         db.add(Like(user_id=current_user.id, post_id=post_id))
         db.commit()
     return get_post_with_likes_or_404(db, post_id)
