@@ -79,8 +79,59 @@ def update_post(post_id: int, data: PostUpdate, db: SessionDep, current_user: Cu
 def delete_post(post_id: int, db: SessionDep, current_user: CurrentUser): # mismas reglas que editar.
     post = get_post_or_404(db, post_id)
     require(post.author_id == current_user.id or is_admin(current_user))
-    db.delete(post)
+    db.delete(post) # que pasa con los likes de ese post? → ondelete="CASCADE" en la tabla Like
     db.commit()
     
-    
+# ═══════════════ Likes ═══════════════
+@router.put("/{post_id}/like", response_model=PostWithLikes)
+def like_post(post_id: int, db: SessionDep, current_user: CurrentUser):
+    # TODO 3: dar like. PUT = "déjalo en este estado": hacerlo dos veces NO es un error (idempotente).
+    #   a) get_post_or_404(db, post_id)
+    #   b) like = db.get(Like, (current_user.id, post_id))
+    #      → get con clave COMPUESTA: la tupla va en el orden de las primary_key del modelo
+    #   c) si like es None: db.add(Like(user_id=current_user.id, post_id=post_id)) y db.commit()
+    #      (si ya existía, no hagas nada)
+    #   d) return get_post_with_likes_or_404(db, post_id)     → el cliente ve el conteo nuevo
+    #raise HTTPException(status.HTTP_501_NOT_IMPLEMENTED, "TODO 3: dar like")
+    get_post_or_404(db, post_id)
+    like = db.get(Like, (current_user.id, post_id))
+    if like is None:
+        db.add(Like(user_id=current_user.id, post_id=post_id))
+        db.commit()
+    return get_post_with_likes_or_404(db, post_id)
+
+
+@router.delete("/{post_id}/like", response_model=PostWithLikes)
+def unlike_post(post_id: int, db: SessionDep, current_user: CurrentUser):
+    # TODO 4: quitar like. Misma idea, al revés, y también idempotente.
+    #   a) get_post_or_404   b) like = db.get(Like, (current_user.id, post_id))
+    #   c) si like existe: db.delete(like) y db.commit()
+    #   d) return get_post_with_likes_or_404(db, post_id)
+    #raise HTTPException(status.HTTP_501_NOT_IMPLEMENTED, "TODO 4: quitar like")
+    get_post_or_404(db, post_id)
+    like = db.get(Like, (current_user.id, post_id))
+    if like is not None:
+        db.delete(like)
+        db.commit()
+    return get_post_with_likes_or_404(db, post_id)
+
+
+@router.get("/{post_id}/likes", response_model=list[UserPublic])
+def read_post_likes(
+    post_id: int, db: SessionDep, offset: int = 0, limit: Annotated[int, Query(le=100)] = 20
+):
+    """¿Quiénes le dieron like a este post? (los más recientes primero)"""
+    # TODO 5: devuelve los USUARIOS que dieron like (no los likes). Es un JOIN:
+    get_post_or_404(db, post_id)
+    stmt = (
+        select(User)
+        .join(Like, col(Like.user_id) == col(User.id))
+        .where(Like.post_id == post_id)
+        .order_by(col(Like.created_at).desc())
+        .offset(offset)
+        .limit(limit)        
+    )
+    return db.exec(stmt).all()
+
+
     
