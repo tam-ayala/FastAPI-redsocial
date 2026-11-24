@@ -78,3 +78,18 @@ class PostPublic(PostBase):
     id: int
     author_id: int
     created_at: datetime
+
+class PostWithLikes(PostPublic):  # SALE: el post + cuántos likes tiene (se calcula, no se guarda)
+    likes_count: int
+
+
+# ═══════════════ Likes ═══════════════
+# Pregunta: ¿qué impide la base de datos con esta clave? ¿Y con ondelete="CASCADE"? impide que el mismo usuario le de like dos veces al mismo post. 
+# ondelete="CASCADE" hace que si borras un User o un Post, se borren sus Likes automáticamente.
+class Like(SQLModel, table=True): # crea la tabla de ENLACE  class Like(SQLModel, table=True)  (muchos-a-muchos users ↔ posts)
+   __tablename__ = "likes"
+   user_id: int = Field(foreign_key="users.id", primary_key=True, ondelete="CASCADE")
+   post_id: int = Field(foreign_key="posts.id", primary_key=True, ondelete="CASCADE")
+   created_at: datetime = Field(default_factory=utcnow)
+
+   
