@@ -4,8 +4,8 @@ from fastapi import APIRouter, HTTPException, Query, status
 from sqlmodel import col, select, func
 from sqlmodel import Session, col, select
 
-from dependencies import CurrentUser, SessionDep, get_post_or_404, is_admin, require
-from models import Post, PostCreate, PostPublic, PostUpdate, PostWithLikes, UserPublic, Like, User, UserPublic
+from app.dependencies import CurrentUser, SessionDep, get_post_or_404, is_admin, require
+from app.models import Post, PostCreate, PostPublic, PostUpdate, PostWithLikes, UserPublic, Like, User, UserPublic
 
 router = APIRouter(prefix="/posts", tags=["posts"])
 

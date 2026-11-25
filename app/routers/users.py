@@ -4,8 +4,8 @@ from fastapi import APIRouter, HTTPException, Query, status
 from sqlalchemy import func
 from sqlmodel import Session, col, select
 
-from dependencies import CurrentUser, SessionDep, get_user_or_404
-from models import Follow, Like, Post, PostPublic, User, UserProfile, UserPublic
+from app.dependencies import CurrentUser, SessionDep, get_user_or_404
+from app.models import Follow, Like, Post, PostPublic, User, UserProfile, UserPublic
 
 router = APIRouter(prefix="/users", tags=["users"])
 

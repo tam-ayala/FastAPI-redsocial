@@ -3,8 +3,8 @@ from contextlib import asynccontextmanager
 
 from fastapi import FastAPI
 
-from database import create_db_and_tables
-from routers import auth, feed, posts, users
+from app.database import create_db_and_tables
+from app.routers import auth, feed, posts, users
 
 
 @asynccontextmanager

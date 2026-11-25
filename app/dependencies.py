@@ -5,9 +5,9 @@ from fastapi import Depends, HTTPException, status
 from fastapi.security import OAuth2PasswordBearer
 from sqlmodel import Session
 
-from database import get_session
-from models import Post, Role, User
-from security import read_access_token
+from app.database import get_session
+from app.models import Post, Role, User
+from app.security import read_access_token
 
 SessionDep = Annotated[Session, Depends(get_session)]
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/auth/login")

@@ -7,7 +7,7 @@ from sqlalchemy.exc import IntegrityError
 from sqlalchemy.pool import StaticPool
 from sqlmodel import Session, SQLModel, create_engine
 
-from database import get_session
+from app.database import get_session
 from main import app
 
 
@@ -89,7 +89,7 @@ def test_follow_updates_both_counters_and_is_idempotent(client):
 
 
 def test_cannot_follow_yourself(client, engine):
-    from models import Follow
+    from app.models import Follow
 
     alice = register_and_login(client, "alice")
     alice_id = user_id(client, alice)
@@ -191,7 +191,7 @@ def test_feed_query_count_does_not_grow_with_followed_users(client, sql_log):
 
 def test_unfollow_then_refollow_keeps_a_single_row(client, engine):
     # seguir, dejar de seguir y volver a seguir deja UNA sola fila
-    from models import Follow
+    from app.models import Follow
     from sqlmodel import select
 
     alice, bob = register_and_login(client, "alice"), register_and_login(client, "bob")

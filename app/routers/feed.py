@@ -4,9 +4,9 @@ from typing import Annotated
 from fastapi import APIRouter, Query
 from sqlmodel import col, select
 
-from dependencies import CurrentUser, SessionDep
-from models import Follow, Post, PostWithLikes
-from routers.posts import posts_with_likes, to_post_with_likes
+from app.dependencies import CurrentUser, SessionDep
+from app.models import Follow, Post, PostWithLikes
+from app.routers.posts import posts_with_likes, to_post_with_likes
 
 router = APIRouter(prefix="/feed", tags=["feed"])
 
