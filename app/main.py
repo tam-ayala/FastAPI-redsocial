@@ -1,10 +1,10 @@
-"""Punto de entrada.   Ejecutar:  uv run fastapi dev clase2/esqueleto/main.py   →   /docs"""
+"""Punto de entrada.   Ejecutar:  uv run fastapi dev clase4/esqueleto/main.py   →   /docs"""
 from contextlib import asynccontextmanager
 
 from fastapi import FastAPI
 
 from database import create_db_and_tables
-from routers import auth, posts, users
+from routers import auth, feed, posts, users
 
 
 @asynccontextmanager
@@ -13,8 +13,9 @@ async def lifespan(_: FastAPI):
     yield
 
 
-app = FastAPI(title="Clase 2", lifespan=lifespan)
+app = FastAPI(title="Clase 4", lifespan=lifespan)
 
 app.include_router(auth.router)
 app.include_router(users.router)
 app.include_router(posts.router)
+app.include_router(feed.router)
